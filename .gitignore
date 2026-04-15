@@ -1,25 +1,110 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-log.txt
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+*~
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Secrets (never commit)
+.env
+.env.*
+*.pem
+secrets.json
+
+# --- This project: large or local-only paths ---
+# Raw video, datasets, and generated media (provide separately or document in README)
 data/
 
+# Ultralytics / YOLO training runs (regenerate with notebook; snapshots live under docs/performance/)
+runs/
+
+# Reference clone / vendor copy (optional; remove this line if you want `ref/` in the repo)
+ref/
+
+# Preprocessing outputs
 preprocessing/images/
 preprocessing/short_videos/
 preprocessing/tuned-images/
 
-
-ref/
-
-.venv/
-
-runs/
-
 tools/
+test/
 
+# U-Net training data, checkpoints, logs (see train/README.md)
 train/data/
 train/[1-4]/
 train/merged_dataset/
-train/training_logs
+train/training_logs/
 train/models/
-train/__pycache__
+train/__pycache__/
 
-test/
+# Model weights (large binaries)
+*.pth
+*.pt
+*.onnx
+*.engine
+*.weights
 
+# Logs
+*.log
 
+# --- Video (large binaries). Exception: one folder for intentionally tiny demo clips ---
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.webm
+*.m4v
+*.wmv
+*.flv
+*.mpeg
+*.mpg
+
+# Track only what is under docs/video-demos/ (README asks for very small files only)
+!docs/video-demos/
+!docs/video-demos/**

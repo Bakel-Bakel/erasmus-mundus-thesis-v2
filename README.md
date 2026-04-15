@@ -1,6 +1,86 @@
-# Erasmus Thesis - Video Processing Tools
+# Erasmus Thesis — Underwater Pipe Inspection & Detection
 
-This repository contains Python scripts for processing video files, particularly for pipe inspection and analysis tasks.
+End-to-end tooling for **video preprocessing**, **underwater image enhancement**, **semantic segmentation (U-Net)**, and **object detection (YOLOv8 transfer learning)** for pipe inspection workflows.
+
+## Project gallery
+
+| Video splitting | Frame extraction | Interactive image tuning |
+|:---:|:---:|:---:|
+| ![Video split into chunks](docs/split-1.png) | ![Extracted frames](docs/image-1.png) | ![Tuning UI with parameter overlay](docs/tuning-interface.png) |
+
+<a id="unet-performance-metrics"></a>
+
+## U-Net segmentation — performance metrics (`train/training_results-final/`)
+
+All figures below live in **`train/training_results-final/`** (final training export). The companion files **`training_report.md`** and **`training_history.json`** in the same folder contain the full configuration, per-epoch tables, and raw history.
+
+**Model (from report):** U-Net with **ResNet-34** encoder (ImageNet pretrained), **scSE** decoder attention, input **512×512**, batch size **8**, **100** epochs, Dice loss, augmentations (H/V flip, rotate 90°, shift–scale–rotate, ImageNet normalise), LR **ReduceLROnPlateau** (factor 0.5, patience 5).
+
+### Best epoch (selected by validation IoU): **epoch 77**
+
+| Metric | Train | Val |
+|--------|-------|-----|
+| Loss | 0.0296 | 0.0371 |
+| **IoU** | 0.9512 | **0.9355** |
+| **Dice** | 0.9749 | **0.9663** |
+| Precision | 0.9723 | 0.9613 |
+| Recall | 0.9776 | 0.9715 |
+| F1 | 0.9749 | 0.9663 |
+| Specificity | 0.9940 | 0.9925 |
+| Accuracy | 0.9910 | 0.9891 |
+
+### Final epoch (**100**) — validation snapshot
+
+| Metric | Train | Val |
+|--------|-------|-----|
+| Loss | 0.0264 | 0.0375 |
+| IoU | 0.9561 | 0.9338 |
+| Dice | 0.9775 | 0.9653 |
+| Precision | 0.9747 | 0.9649 |
+| Recall | 0.9804 | 0.9657 |
+| F1 | 0.9775 | 0.9653 |
+
+### Exported figures (all metrics in this run)
+
+| 01 — Loss curves | 02 — IoU / Dice curves |
+|:---:|:---:|
+| ![Loss curves](train/training_results-final/01_loss_curves.png) | ![IoU and Dice curves](train/training_results-final/02_iou_dice_curves.png) |
+
+| 03 — Learning-rate schedule | 04 — Precision / recall curves |
+|:---:|:---:|
+| ![LR schedule](train/training_results-final/03_lr_schedule.png) | ![Precision and recall](train/training_results-final/04_precision_recall_curves.png) |
+
+| 05 — F1 / Specificity curves | 06 — Metric heatmap |
+|:---:|:---:|
+| ![F1 and specificity](train/training_results-final/05_f1_specificity_curves.png) | ![Metric heatmap](train/training_results-final/06_metric_heatmap.png) |
+
+| 07 — Confusion matrix (best epoch) | 08 — Gradient norm |
+|:---:|:---:|
+| ![Confusion matrix best epoch](train/training_results-final/07_best_epoch_confusion_matrix.png) | ![Gradient norm curve](train/training_results-final/08_gradient_norm_curve.png) |
+
+| 09 — Train vs validation gap | 10 — Per-epoch summary table |
+|:---:|:---:|
+| ![Train vs validation gap](train/training_results-final/09_train_val_gap.png) | ![Per-epoch summary table](train/training_results-final/10_per_epoch_summary_table.png) |
+
+---
+
+## YOLOv8 — object detection (separate experiment)
+
+Bounding-box detection uses **`transfer-learning/training-test-run.ipynb`** and Ultralytics; run outputs normally live under **`runs/`** (gitignored). If you keep optional snapshot plots for documentation, they can still live under **`docs/performance/`**. Reported validation metrics from that run (when available): mAP50 ≈ 0.995, mAP50-95 ≈ 0.951, precision ≈ 0.991, recall ≈ 0.992.
+
+## Cloning & setup (GitHub)
+
+```bash
+git clone https://github.com/<your-username>/erasmus-thesis.git
+cd erasmus-thesis
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+**Note:** Large paths (`data/`, `runs/`, `train/data/`, etc.) are listed in `.gitignore`. Add your own videos, COCO exports, and Roboflow/YOLO weights locally after clone. **Segmentation metrics and figures** for this README are committed under **`train/training_results-final/`** (see section above). Optional YOLO snapshot images may live under `docs/performance/` if you add them.
+
+**Security:** Do not commit API keys. The transfer-learning notebook expects `ROBOFLOW_API_KEY` as an environment variable (see `transfer-learning/training-test-run.ipynb`). Rotate any key that was ever committed to git history before making the repository public.
 
 ## Overview
 
@@ -9,6 +89,7 @@ This repository contains a complete pipeline for underwater pipe detection using
 - **Video Preprocessing**: Splitting large video files into smaller chunks and extracting frames for training datasets
 - **Image Enhancement**: Interactive tuning pipeline for enhancing underwater images with adjustable parameters
 - **Deep Learning**: Transfer learning with YOLOv8 for real-time pipe detection in underwater images and videos
+- **Segmentation**: U-Net training on COCO-style masks (`train/train-u-net.ipynb`; see `train/README.md`)
 
 ## Requirements
 
@@ -212,7 +293,7 @@ When using `--tune-image`, the tool opens two windows:
 
 ---
 
-### 4. `transfer-learning/Underwater_pipe.ipynb`
+### 4. `transfer-learning/training-test-run.ipynb`
 
 Jupyter notebook for training a YOLOv8 model using transfer learning to detect underwater pipes. Uses a pre-trained YOLOv8 model (YOLOv8s) and fine-tunes it on a custom underwater pipe detection dataset.
 
@@ -227,7 +308,7 @@ This notebook implements transfer learning for object detection:
 #### Key Features
 
 - Transfer learning from pre-trained YOLOv8s weights
-- Automatic dataset download from Roboflow
+- Automatic dataset download from Roboflow (set `ROBOFLOW_API_KEY`; see `.env.example`)
 - Model training with validation
 - Performance evaluation (mAP, precision, recall)
 - Inference on test images
@@ -237,7 +318,7 @@ This notebook implements transfer learning for object detection:
 Open the notebook in Jupyter or Google Colab:
 
 ```bash
-jupyter notebook transfer-learning/Underwater_pipe.ipynb
+jupyter notebook transfer-learning/training-test-run.ipynb
 ```
 
 Or use Google Colab:
@@ -312,11 +393,11 @@ python preprocessing/split_videos.py \
 
 This creates multiple smaller video files that are easier to process and manage.
 
-![Spliting Videos](docs/split-1.png)
+![Splitting videos — example 1](docs/split-1.png)
 
-![Spliting Videos](docs/split-2.png)
+![Splitting videos — example 2](docs/split-2.png)
 
-![Spliting Videos](docs/split-3.png)
+![Splitting videos — example 3](docs/split-3.png)
 
 
 #### Step 2: Extract Frames for Training Data
@@ -380,7 +461,7 @@ After extracting frames and preparing the dataset, train a YOLOv8 model using tr
 
 2. **Train Model**: Open the transfer learning notebook:
    ```bash
-   jupyter notebook transfer-learning/Underwater_pipe.ipynb
+   jupyter notebook transfer-learning/training-test-run.ipynb
    ```
 
 3. **Training Configuration**:
@@ -389,11 +470,7 @@ After extracting frames and preparing the dataset, train a YOLOv8 model using tr
    - Image size: 640x640
    - Batch size: 16
 
-4. **Results**: The trained model achieves:
-   - mAP50: 99.5%
-   - mAP50-95: 95.1%
-   - Precision: 99.1%
-   - Recall: 99.2%
+4. **Results**: The trained model achieves (validation, typical Ultralytics run): mAP50 ≈ 99.5%, mAP50-95 ≈ 95.1%, precision ≈ 99.1%, recall ≈ 99.2%. Optional Ultralytics plots can be placed under `docs/performance/` for documentation.
 
 5. **Use Trained Model**: The best model weights are saved at:
    ```
@@ -401,6 +478,10 @@ After extracting frames and preparing the dataset, train a YOLOv8 model using tr
    ```
 
 This model can then be used for real-time pipe detection in new underwater videos and images.
+
+#### Step 5: U-Net pipe segmentation (metrics in repo)
+
+For **semantic segmentation** (pixel masks), use `train/train-u-net.ipynb` and see **`train/README.md`**. Final curves, confusion matrix, and tables are published under **`train/training_results-final/`** — the same figures as in the [U-Net performance section](#unet-performance-metrics) at the top of this README.
 
 ---
 
@@ -418,14 +499,15 @@ erasmus-thesis/
 │   ├── image-tuning/
 │   │   └── tuning-pipeline.py  # Interactive image enhancement tool
 │   └── short_videos/      # Output directory for split videos
+├── docs/                  # Screenshots; optional `docs/performance/` for YOLO snapshots
 ├── transfer-learning/
-│   └── Underwater_pipe.ipynb  # YOLOv8 transfer learning notebook
-├── ref/
-│   └── Underwater-Pipeline-Detection-main/  # Reference implementation
-│       ├── datasets/      # Training datasets
-│       └── Underwater_pipe.ipynb
-├── runs/
-│   └── detect/            # Training outputs and model weights
+│   └── training-test-run.ipynb  # YOLOv8 transfer learning notebook
+├── train/
+│   ├── train-u-net.ipynb  # U-Net semantic segmentation (COCO masks)
+│   ├── training_results-final/  # Final run: plots 01–10, training_report.md, training_history.json
+│   └── README.md          # Training documentation
+├── ref/                   # (gitignored by default — optional local reference clone)
+├── runs/                  # (gitignored — regenerate with notebooks)
 └── README.md              # This file
 ```
 
@@ -462,27 +544,19 @@ erasmus-thesis/
   - Gamma correction for brightness control
 - **User Interface**: Parameter overlay with white text on dark background for maximum visibility
 
-### Deep Learning & Transfer Learning (`Underwater_pipe.ipynb`)
+### U-Net segmentation (`train/training_results-final/`)
 
-- **Transfer Learning Approach**: Fine-tunes pre-trained YOLOv8s model on custom underwater pipe dataset
-- **Model Architecture**: YOLOv8 (You Only Look Once version 8) - state-of-the-art object detection
-- **Training Strategy**: 
-  - Starts with COCO pre-trained weights
-  - Fine-tunes on domain-specific underwater pipe images
-  - Uses data augmentation to improve generalization
-- **Performance**: Achieves >99% precision and recall, demonstrating effective transfer learning
-- **Inference Speed**: Real-time detection capable (~3ms per image on GPU)
+- **Architecture**: U-Net with ResNet-34 encoder (ImageNet pretrained) and scSE decoder attention (see `train/training_results-final/training_report.md`)
+- **Training**: 100 epochs, 512×512 input, Dice loss, strong augmentations; best validation IoU at epoch **77** (**0.9355** val IoU, **0.9663** val Dice)
+- **Artifacts**: Numbered plots `01_`…`10_`, confusion matrix at best epoch, gradient norms, train/val gap, per-epoch summary table image
 
----
+### Deep learning & transfer learning — YOLO (`training-test-run.ipynb`)
 
-## Progress
+- **Transfer learning**: Fine-tunes pre-trained YOLOv8s on a custom underwater pipe detection dataset
+- **Performance** (typical validation run): mAP50 ≈ 0.995, mAP50-95 ≈ 0.951, precision ≈ 0.991, recall ≈ 0.992
+- **Inference**: Real-time capable on GPU (order of a few ms per image in validation logs)
 
-![alt text](<docs/Screenshot from 2026-01-26 05-46-18.png>)
-![alt text](<docs/Screenshot from 2026-01-26 05-55-18.png>)
-![alt text](<docs/Screenshot from 2026-01-27 09-33-13-1.png>)
-![alt text](<docs/Screenshot from 2026-01-27 10-02-13.png>)
-![alt text](<docs/Screenshot from 2026-01-27 09-33-13.png>)
-![alt text](<docs/Screenshot from 2026-01-27 10-19-11.png>)
+Additional informal screenshots remain in `docs/` (filenames with spaces); the tables above use stable paths for the README on GitHub.
 
 ## License
 
